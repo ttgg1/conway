@@ -10,7 +10,7 @@
 #define CELLS_SIZE 100
 
 // Grid init
-const int grid_cell_size = 5;
+const int grid_cell_size = 10;
 const int grid_width = CELLS_SIZE;
 const int grid_height = CELLS_SIZE;
 
@@ -129,12 +129,12 @@ int main(int argc, char *argv[]) {
   double frameStart = 0;
   double dtime = 0;
   float fps = 0;
-  //create dynamic 2d Array.
+  //create dynamicly allocated Array.
   bool *g_cells = malloc(arr_size);
   bool *g_cells_next = malloc(arr_size);
 
   for (int i = 0; i < CELLS_SIZE*CELLS_SIZE-1; i++) {
-      // Acess 2D-Array using pointer iteration
+      // Acess Array using pointer iteration
       g_cells[i] = 0;
       g_cells_next[i] = 0;
   }
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
                    SDL_GetError());
       return EXIT_FAILURE;
   }
-  if (SDL_CreateWindowAndRenderer(window_width, window_height, SDL_WINDOW_RESIZABLE, &window,
+  if (SDL_CreateWindowAndRenderer(window_width, window_height, 0, &window,
                                   &renderer) < 0) {
       SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                    "Create window and renderer: %s", SDL_GetError());
@@ -167,6 +167,11 @@ int main(int argc, char *argv[]) {
             case SDLK_SPACE:
               tick(g_cells, g_cells_next);
               draw(g_cells);
+              break;
+            case SDLK_s:
+              for (int i = 0; i < CELLS_SIZE*CELLS_SIZE-1; i++) {
+                  g_cells[i] = rand() & 1;
+              }
               break;
           }
 
