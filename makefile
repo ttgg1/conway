@@ -6,7 +6,7 @@ B_DIR=build
 S_FILES=$(S_DIR)/main.c
 
 # Output
-EXEC=$(B_DIR)
+EXEC=$(B_DIR)/conway
 
 # Build settings
 CC=gcc

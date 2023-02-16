@@ -30,6 +30,10 @@ SDL_Renderer *renderer;
 bool simulate = false;
 bool *g_cells;
 
+bool* getCellAt(bool *g_cells, int x, int y) {
+  return (g_cells + x*CELLS_SIZE + y);
+}
+
 // Game functions
 void tick(bool *cells) {
   
@@ -61,7 +65,7 @@ int main(void) {
 
   for (int i = 0; i < CELLS_SIZE; i++) {
     for (int j = 0; j < CELLS_SIZE; j++) {
-      // Acess 2D-Array using pointer iteration 
+      // Acess 2D-Array using pointer iteration
       *(g_cells + i*CELLS_SIZE + j)= 0;
     }
   }
