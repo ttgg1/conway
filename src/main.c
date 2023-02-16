@@ -11,7 +11,7 @@
 #define CELLS_SIZE 255
 
 // Grid init
-const int grid_cell_size = 36;
+const int grid_cell_size = 5;
 const int grid_width = CELLS_SIZE;
 const int grid_height = CELLS_SIZE;
 
@@ -19,11 +19,10 @@ const int grid_height = CELLS_SIZE;
 const int window_width = (grid_width * grid_cell_size) + 1;
 const int window_height = (grid_height * grid_cell_size) + 1;
 
-// Dark theme.
-SDL_Color grid_background = {22, 22, 22, 255};  // Barely Black
-SDL_Color grid_line_color = {44, 44, 44, 255};  // Dark grey
-SDL_Color grid_cursor_ghost_color = {44, 44, 44, 255};
-SDL_Color grid_cursor_color = {255, 255, 255, 255};  // White
+// define colors
+SDL_Color back_color = {22, 22, 22, 255};  // Barely Black
+SDL_Color line_color = {44, 44, 44, 255};  // Dark grey
+SDL_Color alive_color = {255, 255, 255, 255};  // White
 
 // SDL Variables
 bool running = true;
@@ -33,24 +32,33 @@ SDL_Renderer *renderer;
 // Game Variables
 bool simulate = false;
 
+//Helpers
+bool isAlive(bool (*cells)[CELLS_SIZE][CELLS_SIZE], int x,int y){
+  return (*cells)[x][y]; 
+}
+void flipCell(bool (*cells)[CELLS_SIZE][CELLS_SIZE], int x,int y){
+  (*cells)[x][y] = !(*cells)[x][y];
+}
+
 // Game functions
 void tick(bool (*cells)[CELLS_SIZE][CELLS_SIZE]) {
   for (int i = 0; i < CELLS_SIZE-1; i++) {
     for (int j = 0; j < CELLS_SIZE-1; j++) {
       int neigbours = 0;
+
       //calculate neigbours
       if((*cells)[i-1][j+1] == 1)neigbours++; //top left
       if((*cells)[i+1][j+1] == 1)neigbours++; //top right
 
       if((*cells)[i][j+1] == 1)neigbours++; // above
       if((*cells)[i][j-1] == 1)neigbours++; // below
-    
+      
       if((*cells)[i-1][j] == 1)neigbours++; // left
       if((*cells)[i+1][j] == 1)neigbours++; // right
 
       if((*cells)[i-1][j-1] == 1)neigbours++; // bottom left
       if((*cells)[i+1][j-1] == 1)neigbours++; // bottom right
-    
+      
       //calculate if alive
       if((*cells)[i][j] == 1){
         if(neigbours > 3 || neigbours < 2) {
@@ -64,28 +72,37 @@ void tick(bool (*cells)[CELLS_SIZE][CELLS_SIZE]) {
   }
 }
 
-void draw(bool (*cells)[CELLS_SIZE][CELLS_SIZE]) {
-  // Draw grid background.
-  SDL_SetRenderDrawColor(renderer, grid_background.r, grid_background.g,
-                         grid_background.b, grid_background.a);
-  SDL_RenderClear(renderer);
+void draw(bool (*cells)[CELLS_SIZE][CELLS_SIZE]) {  
+  // Draw game
+  
+  // Rect for cell drawing
+  SDL_Rect cell = {0,0,grid_cell_size,grid_cell_size};
 
-  // Draw grid lines.
-  SDL_SetRenderDrawColor(renderer, grid_line_color.r, grid_line_color.g,
-                         grid_line_color.b, grid_line_color.a);
-
-  for (int x = 0; x < 1 + grid_width * grid_cell_size;
-       x += grid_cell_size) {
-      SDL_RenderDrawLine(renderer, x, 0, x, window_height);
+  for(int i=0;i<CELLS_SIZE;i++) {
+    for(int j=0;j<CELLS_SIZE;j++) {
+      if(!isAlive(cells,i,j)){
+        // Move rect
+        cell.x = (int)i*grid_cell_size;
+        cell.y = (int)j*grid_cell_size;
+        //change color
+        SDL_SetRenderDrawColor(renderer, back_color.r,back_color.g,back_color.b,back_color.a);
+        //draw rect
+        SDL_RenderDrawRect(renderer, &cell);
+      } else if (isAlive(cells,i,j)) {
+        // Move rect
+        cell.x = (int)i*grid_cell_size;
+        cell.y = (int)j*grid_cell_size;
+        //change color
+        SDL_SetRenderDrawColor(renderer, alive_color.r,alive_color.g,alive_color.b,alive_color.a);
+        //draw rect
+        SDL_RenderFillRect(renderer, &cell);
+      }
+    }
   }
-
-  for (int y = 0; y < 1 + grid_height * grid_cell_size;
-       y += grid_cell_size) {
-      SDL_RenderDrawLine(renderer, 0, y, window_width, y);
-  }
+  SDL_RenderPresent(renderer);
 }
 
-int main(void) {
+int main(int argc, char* argv[]) {
   //create dynamic 2d Array.
   bool (*g_cells)[CELLS_SIZE][CELLS_SIZE] = malloc(sizeof *g_cells);
 
@@ -124,7 +141,8 @@ int main(void) {
           }
 
         case SDL_MOUSEBUTTONDOWN:
-          (*g_cells)[(int) e.motion.x / grid_cell_size][(int) e.motion.y / grid_cell_size] = 1;
+          flipCell(g_cells, ((int) e.motion.x * grid_cell_size), ((int) e.motion.y * grid_cell_size));
+          //(*g_cells)[(int) e.motion.x * grid_cell_size][(int) e.motion.y * grid_cell_size] = !(*g_cells)[(int) e.motion.x * grid_cell_size][(int) e.motion.y * grid_cell_size];
           break;
         case SDL_QUIT:
           running = false;
