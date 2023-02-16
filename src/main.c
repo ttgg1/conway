@@ -4,6 +4,9 @@
 
 #include <SDL2/SDL.h>
 
+#include "vector.h"
+
+
 #define CELLS_SIZE 255
 
 // Grid init
@@ -36,7 +39,8 @@ bool* getCellAt(bool *g_cells, int x, int y) {
 
 // Game functions
 void tick(bool *cells) {
-  
+
+  //for (int i = 0)
 }
 
 void draw(bool *cells) {
