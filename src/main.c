@@ -1,3 +1,4 @@
+#include <SDL2/SDL_video.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,8 +16,8 @@ const int grid_width = CELLS_SIZE;
 const int grid_height = CELLS_SIZE;
 
 // + 1 so that the last grid lines fit in the screen.
-int window_width = (grid_width * grid_cell_size) + 1;
-int window_height = (grid_height * grid_cell_size) + 1;
+const int window_width = (grid_width * grid_cell_size) + 1;
+const int window_height = (grid_height * grid_cell_size) + 1;
 
 // Dark theme.
 SDL_Color grid_background = {22, 22, 22, 255};  // Barely Black
@@ -31,19 +32,39 @@ SDL_Renderer *renderer;
 
 // Game Variables
 bool simulate = false;
-bool *g_cells;
-
-bool* getCellAt(bool *g_cells, int x, int y) {
-  return (g_cells + x*CELLS_SIZE + y);
-}
 
 // Game functions
-void tick(bool *cells) {
+void tick(bool (*cells)[CELLS_SIZE][CELLS_SIZE]) {
+  for (int i = 0; i < CELLS_SIZE-1; i++) {
+    for (int j = 0; j < CELLS_SIZE-1; j++) {
+      int neigbours = 0;
+      //calculate neigbours
+      if((*cells)[i-1][j+1] == 1)neigbours++; //top left
+      if((*cells)[i+1][j+1] == 1)neigbours++; //top right
 
-  //for (int i = 0)
+      if((*cells)[i][j+1] == 1)neigbours++; // above
+      if((*cells)[i][j-1] == 1)neigbours++; // below
+    
+      if((*cells)[i-1][j] == 1)neigbours++; // left
+      if((*cells)[i+1][j] == 1)neigbours++; // right
+
+      if((*cells)[i-1][j-1] == 1)neigbours++; // bottom left
+      if((*cells)[i+1][j-1] == 1)neigbours++; // bottom right
+    
+      //calculate if alive
+      if((*cells)[i][j] == 1){
+        if(neigbours > 3 || neigbours < 2) {
+          (*cells)[i][j] = 0;
+        }
+        else if(neigbours == 3){
+          (*cells)[i][j] = 1;
+        }
+      }
+    }
+  }
 }
 
-void draw(bool *cells) {
+void draw(bool (*cells)[CELLS_SIZE][CELLS_SIZE]) {
   // Draw grid background.
   SDL_SetRenderDrawColor(renderer, grid_background.r, grid_background.g,
                          grid_background.b, grid_background.a);
@@ -65,12 +86,13 @@ void draw(bool *cells) {
 }
 
 int main(void) {
-  *g_cells = (bool*) malloc(2*CELLS_SIZE*sizeof(bool)); //create dynamic 2d Array.
+  //create dynamic 2d Array.
+  bool (*g_cells)[CELLS_SIZE][CELLS_SIZE] = malloc(sizeof *g_cells);
 
   for (int i = 0; i < CELLS_SIZE; i++) {
     for (int j = 0; j < CELLS_SIZE; j++) {
       // Acess 2D-Array using pointer iteration
-      *(g_cells + i*CELLS_SIZE + j)= 0;
+      (*g_cells)[i][j] = 0;
     }
   }
 
@@ -80,7 +102,7 @@ int main(void) {
                    SDL_GetError());
       return EXIT_FAILURE;
   }
-  if (SDL_CreateWindowAndRenderer(window_width, window_height, 0, &window,
+  if (SDL_CreateWindowAndRenderer(window_width, window_height, SDL_WINDOW_RESIZABLE, &window,
                                   &renderer) < 0) {
       SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                    "Create window and renderer: %s", SDL_GetError());
@@ -102,7 +124,7 @@ int main(void) {
           }
 
         case SDL_MOUSEBUTTONDOWN:
-          *(g_cells + (int) (e.motion.x / grid_cell_size)*CELLS_SIZE + (int) (e.motion.y/grid_cell_size)) = 1;
+          (*g_cells)[(int) e.motion.x / grid_cell_size][(int) e.motion.y / grid_cell_size] = 1;
           break;
         case SDL_QUIT:
           running = false;
