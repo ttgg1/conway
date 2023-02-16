@@ -3,10 +3,10 @@ S_DIR=src
 B_DIR=build
 
 # Files
-S_FILES=$(S_DIR)/main.c
+S_FILES=$(S_DIR)/*
 
 # Output
-EXEC=$(B_DIR)
+EXEC=$(B_DIR)/conway
 
 # Build settings
 CC=gcc
