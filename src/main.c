@@ -1,16 +1,20 @@
-#include <SDL2/SDL_video.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <pthread.h>
 
 #include <SDL2/SDL.h>
 
+#include <SDL2/SDL_video.h>
 
-#define CELLS_SIZE 100
+#define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))
+
+#define CELLS_SIZE 1000
+#define NUM_THREADS 100
 
 // Grid init
-const int grid_cell_size = 10;
+const int grid_cell_size = 1;
 const int grid_width = CELLS_SIZE;
 const int grid_height = CELLS_SIZE;
 
@@ -45,6 +49,7 @@ void flipCell(bool *cells,int index){
   if(index >= 0 && index < CELLS_SIZE*CELLS_SIZE)
     cells[index] = !cells[index];
 }
+
 int modulo(int a, int b) {
   if (a >= 0) {
     return a % b;
@@ -52,48 +57,98 @@ int modulo(int a, int b) {
   return b+(a % b);
 }
 
+// Struct for thread data
+struct th_data{
+  bool* cells;
+  bool* cells_n;
+  int f_index; //first index
+  int l_index; //last index
+};
+
 // Game functions
-void tick(bool *cells, bool *cells_next) { 
-  memcpy(cells_next, cells, arr_size);
-  for (int i = 0; i < CELLS_SIZE*CELLS_SIZE; i++) {
-    int neigbours = 0;
-    //calculate neigbours
-    if(cells[modulo((i-grid_width-1),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; //top left
-    if(cells[modulo((i-grid_width+1),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; //top right
 
-    if(cells[modulo((i-grid_width),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; // above
-    if(cells[modulo((i+grid_width),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; // below
-  
-    if(cells[modulo((i-1),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; // left
-    if(cells[modulo((i+1),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; // right
+void *getNeighbours(void* p){
+    struct th_data *d = p;
+    
+    for(int i = d->f_index;i<d->l_index;i++){
+      int neigbours = 0;
+      //calculate neigbours
+      if(d->cells[modulo((i-grid_width-1),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; //top left
+      if(d->cells[modulo((i-grid_width+1),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; //top right
 
-    if(cells[modulo((i+grid_width-1),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; // bottom left
-    if(cells[modulo((i+grid_width+1),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; // bottom right
-  
-    /*
-    printf("Zelle %i\n",i);
-    printf("Nachbarn: %i\n",neigbours);
-    printf("Top Left %i \n",modulo((i-grid_width-1),CELLS_SIZE*CELLS_SIZE));
-    printf("Top Right %i \n",modulo((i-grid_width+1),CELLS_SIZE*CELLS_SIZE));
-    printf("AMOGUS %i \n",modulo((i-grid_width),CELLS_SIZE*CELLS_SIZE));
-    printf("below %i \n",modulo((i+grid_width),CELLS_SIZE*CELLS_SIZE));
-    printf("left %i \n",modulo((i-1),CELLS_SIZE*CELLS_SIZE));
-    printf("right %i \n",modulo((i+1),CELLS_SIZE*CELLS_SIZE));
-    printf("bottom left %i \n",modulo((i+grid_width-1),CELLS_SIZE*CELLS_SIZE));
-    printf("bottom right %i \n",modulo((i+grid_width+1),CELLS_SIZE*CELLS_SIZE));
-    printf("\n\n");
-    */
-    //calculate if alive
-    if(isAlive(cells,i)){
-      if(neigbours > 3 || neigbours < 2) {
-        cells_next[i] = 0;
+      if(d->cells[modulo((i-grid_width),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; // above
+      if(d->cells[modulo((i+grid_width),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; // below
+    
+      if(d->cells[modulo((i-1),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; // left
+      if(d->cells[modulo((i+1),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; // right
+
+      if(d->cells[modulo((i+grid_width-1),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; // bottom left
+      if(d->cells[modulo((i+grid_width+1),CELLS_SIZE*CELLS_SIZE)] == 1)neigbours++; // bottom right
+    
+      /*
+      printf("Zelle %i\n",i);
+      printf("Nachbarn: %i\n",neigbours);
+      printf("Top Left %i \n",modulo((i-grid_width-1),CELLS_SIZE*CELLS_SIZE));
+      printf("Top Right %i \n",modulo((i-grid_width+1),CELLS_SIZE*CELLS_SIZE));
+      printf("AMOGUS %i \n",modulo((i-grid_width),CELLS_SIZE*CELLS_SIZE));
+      printf("below %i \n",modulo((i+grid_width),CELLS_SIZE*CELLS_SIZE));
+      printf("left %i \n",modulo((i-1),CELLS_SIZE*CELLS_SIZE));
+      printf("right %i \n",modulo((i+1),CELLS_SIZE*CELLS_SIZE));
+      printf("bottom left %i \n",modulo((i+grid_width-1),CELLS_SIZE*CELLS_SIZE));
+      printf("bottom right %i \n",modulo((i+grid_width+1),CELLS_SIZE*CELLS_SIZE));
+      printf("\n\n");
+      */
+      //calculate if alive
+      if(isAlive(d->cells,i)){
+        if(neigbours > 3 || neigbours < 2) {
+          d->cells_n[i] = 0;
+        }
+      } else if(neigbours == 3){
+          d->cells_n[i] = 1;
       }
-    } else if(neigbours == 3){
-        cells_next[i] = 1;
-    } 
+    }
+    pthread_exit(0);
+}
+
+void tick(bool *cells, bool *cells_next) {
+  memcpy(cells_next, cells, arr_size); // copy cells to buffer array, so we dont edit the cells array during the calculations
+
+  // Multithreading for ULTIMATE SPEEEEEEEEDDDDDDD
+  pthread_t th_ids[NUM_THREADS];
+  int step = CELLS_SIZE*CELLS_SIZE / NUM_THREADS; // calculate amount of cells per thread
+  // TODO:dynamically set number of threads
+  
+  // set data for threads
+  struct th_data *data = (struct th_data*) malloc(sizeof(struct th_data));
+  data->cells = cells;
+  data->cells_n = cells_next;
+
+  // create Threads
+  int tmp_l_index = 0; // used to determine next starting position
+  for(int i=0;i<NUM_THREADS;i++){
+
+    data->f_index=tmp_l_index;
+
+    if(tmp_l_index < CELLS_SIZE*CELLS_SIZE){
+      data->l_index=data->f_index+step;
+    } else { // number of threads is not dividable by the size of the array
+      data->l_index=CELLS_SIZE*CELLS_SIZE-1;// maximum posible index of array
+    }
+
+    pthread_create(&th_ids[i],NULL,getNeighbours,data);
+    pthread_join(th_ids[i],NULL);
+
+    tmp_l_index=data->l_index;
   }
+
+  // wait for threads to finish
+  for(int i = 0;i<NUM_THREADS;i++){
+    pthread_join(th_ids[i],NULL);
+  }
+
   // bufferswap
   memcpy(cells, cells_next, arr_size);
+  free(data);
 }
 
 void draw(bool *cells) {  
