@@ -1,5 +1,6 @@
 # Directories
-S_DIR=src
+src=$(wildcard src/*.c)
+obj=$(src:.c=.o)
 B_DIR=build
 
 # Files
@@ -10,17 +11,18 @@ EXEC=$(B_DIR)/conway
 
 # Build settings
 CC=gcc
+FLAGS=-O2
 # SDL options
 CC_SDL=-lSDL2 `sdl2-config --cflags --libs`
 
+all:conway
 
-all:Build
+conway: $(obj)
+	$(CC) -o $(ECEC) $@ $^ $(CC_SDL) $(FLAGS)
 
-Build:
-	$(CC) $(S_FILES) -o $(EXEC) $(CC_SDL)
-
-build_run:Build
+build_run:conway
 	$(EXEC)
 
+.PHONY: clean
 clean:
-	rm -rf $(B_DIR)/*
+	rm -f $(obj) conway
