@@ -1,6 +1,6 @@
 # Directories
 src=$(wildcard src/*.c)
-obj=game.o main.o
+obj=main.o game.o
 DEPS=game.h
 
 

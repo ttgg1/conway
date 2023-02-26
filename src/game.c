@@ -8,14 +8,25 @@ SDL_Color line_color = (SDL_Color){44, 44, 44, 255};      // Dark grey
 SDL_Color alive_color = (SDL_Color){255, 255, 255, 255};  // White
 SDL_Color grid_line_color = (SDL_Color){44, 44, 44, 255}; // Dark grey
 
-int init(Game* g,const int num_cells, const int num_threads){
-  printf("hi init 1");
+struct Game* alloc_Game(void){
+  struct Game* g;
+
+  g = malloc(sizeof(*g));
+  if(g == NULL){
+    printf("Failed to initialize Game-Array !\n");
+    return NULL;
+  }
+
+  memset(g,0,sizeof(*g));
+  return g;
+}
+
+int set_vals(struct Game *g,const int num_cells, const int num_threads){
   //init everything to standard
   g->NUM_THREADS = num_threads;
   g->CELLS_SIZE = num_cells;
 
-  g->arr_size= g->CELLS_SIZE*g->CELLS_SIZE;
-
+  g->arr_size = g->CELLS_SIZE*g->CELLS_SIZE; //size of bool = 1
   g->cells = malloc(g->arr_size*sizeof(bool));
   g->cells_next = malloc(g->arr_size*sizeof(bool));
 
@@ -30,14 +41,15 @@ int init(Game* g,const int num_cells, const int num_threads){
   g->grid_height = g->CELLS_SIZE;
   g->window_width = g->grid_width + 1;
   g->window_height = g->grid_height + 1;
-  
-  printf("hi init 2");
 
   // fill cells arrays
-  for (int i = 0; i < g->arr_size - 1; i++) {
+  /*for (int i = 0; i < g->arr_size - 1; i++) {
     g->cells[i] = 0;
     g->cells_next[i] = 0;
-  }
+  }*/
+  
+  memset(g->cells,0,g->arr_size);
+  memset(g->cells_next,0,g->arr_size);
   
   // init SDL
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -53,10 +65,10 @@ int init(Game* g,const int num_cells, const int num_threads){
   }
 
   SDL_SetWindowTitle(g->window, "Conways Game of Life");
-  return 0;
+  return EXIT_SUCCESS;
 }
 
-void draw(Game *g) {
+void draw(struct Game *g) {
   // Draw game
   SDL_SetRenderDrawColor(g->renderer, back_color.r, back_color.g, back_color.b,
                          back_color.a);
@@ -140,7 +152,7 @@ void *getNeighbours(void *p) {
   pthread_exit(0);
 }
 
-void tick(Game *g) {
+void tick(struct Game *g) {
   memcpy(g->cells_next, g->cells,g->arr_size); 
   // copy cells to buffer array, so we dont edit the cells array during the calculations
 
@@ -186,7 +198,7 @@ void tick(Game *g) {
   free(data);
 }
 
-void close(Game *g){
+void close(struct Game *g){
   g->running = false;
 
   free(g->cells);
@@ -194,10 +206,12 @@ void close(Game *g){
 
   SDL_DestroyRenderer(g->renderer);
   SDL_DestroyWindow(g->window);
+
+  free(g);
   SDL_Quit();
 }
 
-void loop(Game *g){
+void loop(struct Game *g){
     while (g->running) {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
@@ -280,7 +294,7 @@ void loop(Game *g){
   }
 }
 
-bool isAlive(Game *g, int index) {
+bool isAlive(struct Game *g, int index) {
   if (index >= 0 && index < g->arr_size)
     return g->cells[index];
   printf("ARGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG\n");
@@ -294,16 +308,16 @@ bool isAlive_thread(bool* cells, int index, int arr_size) {
   return 0;
 }
 
-void flipCell(Game *g, int index) {
+void flipCell(struct Game *g, int index) {
   if (index >= 0 && index < g->arr_size)
     g->cells[index] = !g->cells[index];
 }
 
-int getIndex(Game *g,int x,int y){
+int getIndex(struct Game *g,int x,int y){
   return modulo(x + (y*g->grid_width), g->arr_size);
 }
 
-bool getCellAt(Game *g,int x,int y){
+bool getCellAt(struct Game *g,int x,int y){
   return g->cells[getIndex(g,x,y)];
 }
 

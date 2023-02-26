@@ -5,5 +5,8 @@
             "binaryPath": "/home/paul/Projects/conway/build/conway",
             "binaryArgs": []
         }
-    ]
+    ],
+    "files.associations": {
+        "game.h": "c"
+    }
 }

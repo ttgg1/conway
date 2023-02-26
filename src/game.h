@@ -16,7 +16,7 @@
   ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d) / 2) / (d)) : (((n) + (d) / 2) / (d)))
 
 // Struct containing game Variables
-typedef struct Game{
+struct Game{
   // Cells Arrays
   unsigned int CELLS_SIZE;
   unsigned int NUM_THREADS;
@@ -43,22 +43,23 @@ typedef struct Game{
   int grid_height;
   int window_width;
   int window_height;
-} Game;
+};
 
 // Game Functions
-extern void draw(Game *g);
+extern void draw(struct Game *g);
 extern void *getNeighbours(void* p); // executed using threads
-extern void tick(Game *g);
-extern void loop(Game *g);
-extern int init(Game *g,const int num_cells,const int num_threads);
-extern void close(Game *g);
+extern void tick(struct Game *g);
+extern void loop(struct Game *g);
+extern int set_vals(struct Game* g,const int num_cells,const int num_threads);
+extern struct Game* alloc_Game(void);
+extern void close(struct Game *g);
 
 // Helper Functions
-extern bool isAlive(Game *g, int index);
+extern bool isAlive(struct Game *g, int index);
 extern bool isAlive_thread(bool* cells, int index, int arr_size); //overload for internal use
-extern void flipCell(Game *g, int index);
-extern int getIndex(Game *g,int x,int y);
-extern bool getCellAt(Game *g,int x,int y);
+extern void flipCell(struct Game *g, int index);
+extern int getIndex(struct Game *g,int x,int y);
+extern bool getCellAt(struct Game *g,int x,int y);
 
 extern int modulo(int a, int b);
 
