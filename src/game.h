@@ -14,7 +14,7 @@
 // Divide and round to closest
 #define DIV_ROUND_CLOSEST(n, d)                                                \
   ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d) / 2) / (d)) : (((n) + (d) / 2) / (d)))
-
+// TODO: can use cell rect instead of only square
 // Struct containing game Variables
 struct Game{
   // Cells Arrays

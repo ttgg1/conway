@@ -58,19 +58,24 @@ int init_Libs(struct Game* g){
                 SDL_GetError());
     return EXIT_FAILURE;
   }
-  if (SDL_CreateWindowAndRenderer(g->window_width, g->window_height, SDL_WINDOW_RESIZABLE, &g->window,
-                                  &g->renderer) < 0) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Create window and renderer: %s",
-                  SDL_GetError());
-    return EXIT_FAILURE;
+  g->window = SDL_CreateWindow("Conways Game of Life",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,g->window_width,g->window_height,SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+  g->renderer = SDL_CreateRenderer(g->window,-1,SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  if(g->window == NULL){
+      printf("SDL Window could not be created ! \n");
+      return EXIT_FAILURE;
   }
+  if(g->renderer == NULL){
+      printf("SDL Renderer could not be created ! \n");
+      return EXIT_FAILURE;
+  }
+  SDL_SetRenderDrawColor( g->renderer, 0x00, 0x00, 0x00, 0xFF );
 
-  SDL_SetWindowTitle(g->window, "Conways Game of Life");
   return EXIT_SUCCESS;
 }
 
+// TODO: rewrite
 void draw(struct Game *g) {
-  // Draw game
+  /* Draw game
   SDL_SetRenderDrawColor(g->renderer, back_color.r, back_color.g, back_color.b,
                          back_color.a);
   SDL_RenderClear(g->renderer);
@@ -99,8 +104,60 @@ void draw(struct Game *g) {
       }
     }
   }
+  SDL_RenderPresent(g->renderer);*/
 
-  SDL_RenderPresent(g->renderer);
+
+    SDL_Surface *surf = SDL_CreateRGBSurface(0,g->dm.w,g->dm.h,32,0,0,0,0);
+    // TODO: make ram effient, by using list of cells that are alive
+    // TODO: use dynamic list
+    SDL_Rect *alive_cells=malloc(g->arr_size* sizeof(SDL_Rect)); // a bit memory inefficient, but prettier
+    SDL_Rect *dead_cells=malloc(g->arr_size* sizeof(SDL_Rect));
+
+    int width_cells = DIV_ROUND_CLOSEST(g->dm.w,g->grid_cell_size); // How many cells fit into one "row"
+    int height_cells = DIV_ROUND_CLOSEST(g->dm.h,g->grid_cell_size); // How many cells fit in one "collum"
+
+   // SDL_Rect showRect = {.w = width_cells,.h=height_cells,.x=g->offset_x,.y=g->offset_y};
+    SDL_Rect showRect = {.w = g->grid_width*g->grid_cell_size,.h=g->grid_height*g->grid_cell_size,.x=g->offset_x,.y=g->offset_y};
+    SDL_Rect srcRect = {.w = g->grid_width,.h=g->grid_height,.x=0,.y=0};
+
+    int num_alive = 0;
+    int num_dead = 0;
+
+    // Fill Rect array with all drawable positions.
+    //TODO: optimize (use one loop)
+    for(int y = 0; y < g->grid_height; y++) {
+        for(int x = 0; x < g->grid_width; x++) {
+            if(getCellAt(g,x,y)){
+                // cell alive
+                alive_cells[num_alive] = (SDL_Rect){.w = 1,.h=1,.x=x, .y=y};
+                ++num_alive;
+            } else {
+                // cell dead
+                dead_cells[num_dead] = (SDL_Rect){.w = 1,.h=1,.x=x, .y=y};
+                ++num_dead;
+            }
+        }
+    }
+    //draw rects on surface
+    SDL_LockSurface(surf);
+    SDL_FillRects(surf,alive_cells,num_alive, SDL_MapRGBA(surf->format,alive_color.r,alive_color.g,alive_color.b,alive_color.a));
+    SDL_FillRects(surf,dead_cells,num_dead, SDL_MapRGBA(surf->format,grid_line_color.r,grid_line_color.g,grid_line_color.b,grid_line_color.a));
+    SDL_UnlockSurface(surf);
+
+    // Create one big texture, that gets transformed when zooming or moving
+    // Everything gets "rendered" this way, but drawing a texture is very very fast because of hardware acceleration
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(g->renderer,surf);
+
+    SDL_RenderClear(g->renderer);
+
+    SDL_RenderCopy(g->renderer,tex,&srcRect,&showRect); // TODO: use offset to only draw a small portion of the Texture
+
+    SDL_RenderPresent(g->renderer);
+
+    SDL_FreeSurface(surf);
+    SDL_DestroyTexture(tex);
+    free(alive_cells);
+    free(dead_cells);
 }
 
 // Struct for thread data
@@ -226,42 +283,62 @@ void g_close(struct Game *g){
 void loop(struct Game *g){
     SDL_Event e;
 
+    static int mouse_at_R_click_x = 0;
+    static int mouse_at_R_click_y = 0;
+
+    int scroll_scale = 5;
+    static bool isDragged = false;
     //handle Events
     while (SDL_PollEvent(&e)) {
       switch (e.type) {
-      case SDL_KEYDOWN:
-          handle_KeyEvents(g,&e);
-          break;
+          case SDL_KEYDOWN:
+              handle_KeyEvents(g,&e);
+              break;
 
-      case SDL_MOUSEBUTTONDOWN:
-        if(e.button.button == SDL_BUTTON_LEFT){ //Flip a cell if clicked
-          /*int index = modulo(floor(e.motion.x/g->grid_cell_size) + g->offset_x  + ((floor(e.motion.y / g->grid_cell_size) + g->offset_y) * g->grid_width), g->arr_size);
-          flipCell(g, index);*/
-          flipCell(g, getIndex(g,e.motion.x,e.motion.y));
-          draw(g);
-        }
-        break;
+          case SDL_MOUSEBUTTONDOWN:
+            if(e.button.button == SDL_BUTTON_LEFT){ //Flip a cell if clicked
+              int index = modulo(floor(e.motion.x/g->grid_cell_size) - floor(g->offset_x/g->grid_cell_size)  + ((floor(e.motion.y / g->grid_cell_size) - floor(g->offset_y/g->grid_cell_size)) * g->grid_width), g->arr_size);
+              flipCell(g, index);
+              //flipCell(g, getIndex(g,e.motion.x,e.motion.y));
+              draw(g);
+            }
+            if(e.button.button == SDL_BUTTON_RIGHT && !isDragged){
+                mouse_at_R_click_x = e.motion.x;
+                mouse_at_R_click_y = e.motion.y;
+                isDragged = true;
+            }
+            break;
 
-      case SDL_WINDOWEVENT:
-          handle_WindowEvents(g,&e);
-          break;
+          case SDL_MOUSEBUTTONUP:
+              if(e.button.button == SDL_BUTTON_RIGHT){
+                  g->offset_x += (int) (e.motion.x-mouse_at_R_click_x)/scroll_scale;
+                  g->offset_y += (int) (e.motion.y-mouse_at_R_click_y)/scroll_scale;
 
-      case SDL_MOUSEWHEEL:
-          handle_MouseEvents(g,&e);
-          break;
+                  mouse_at_R_click_x = mouse_at_R_click_y = 0;
+                  isDragged = false;
+              }
+              break;
 
-      case SDL_QUIT:
-        g->running = false;
-        g->simulate = false;
-        break;
-      }
+          case SDL_WINDOWEVENT:
+              handle_WindowEvents(g,&e);
+              break;
+
+          case SDL_MOUSEWHEEL:
+              handle_MouseEvents(g,&e);
+              break;
+
+          case SDL_QUIT:
+            g->running = false;
+            g->simulate = false;
+            break;
+          }
     }
 
     // Calling neesary game functions
     if (g->simulate) {
       tick(g);
-      draw(g);
     }
+    draw(g);
 }
 
 
@@ -297,6 +374,7 @@ int modulo(int a, int b){
 }
 
 void handle_KeyEvents(struct Game *g, SDL_Event *e) {
+    int step = 5;
     switch ((*e).key.keysym.sym) {
             // Keypresses
             case SDLK_r: // pause/play the simulation
@@ -313,16 +391,16 @@ void handle_KeyEvents(struct Game *g, SDL_Event *e) {
               break;
               // Moving the plane with the arrow keys
             case SDLK_RIGHT:
-              g->offset_x--;
+              g->offset_x-=step;
               break;
             case SDLK_LEFT:
-              g->offset_x++;
+              g->offset_x+=step;
               break;
             case SDLK_UP:
-              g->offset_y++;
+              g->offset_y+=step;
               break;
             case SDLK_DOWN:
-              g->offset_y--;
+              g->offset_y-=step;
               break;
           }
 }
