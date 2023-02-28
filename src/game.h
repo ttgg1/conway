@@ -7,9 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <SDL2/SDL.h>
+#include <glib-2.0/glib.h>
 
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_video.h>
+
+#include "utils.h"
 
 // Divide and round to closest
 #define DIV_ROUND_CLOSEST(n, d)                                                \
@@ -23,6 +26,7 @@ struct Game{
   bool *cells;
   bool *cells_next;
   int arr_size;
+  int generation;
 
   // Grid init
   int grid_cell_size;
@@ -52,6 +56,7 @@ struct Game* alloc_Game(void);
 
 struct Game* g_start(int cells,int num_threads);
 void g_close(struct Game *g);
+void fillRandom(struct Game *g);
 
 // Game Logic
 void *getNeighbours(void* p); // executed using threads
@@ -65,6 +70,7 @@ void handle_WindowEvents(struct Game *g, SDL_Event *e);
 
 // Output
 void draw(struct Game *g);
+void drawToText(struct Game *g,char* filename);
 
 // Helper Functions
 bool isAlive(struct Game *g, int index);

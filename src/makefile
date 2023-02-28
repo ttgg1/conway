@@ -11,7 +11,7 @@ EXEC=$(B_DIR)/conway
 
 # Build settings
 CC=gcc
-FLAGS=-O2 -I.
+FLAGS=-O2 -I. `pkg-config --cflags --libs glib-2.0`
 # SDL options
 CC_SDL=-lSDL2 `sdl2-config --cflags --libs`
 
@@ -21,7 +21,7 @@ all: conway
 	$(CC) -c -o $@ $< $(FLAGS)
 
 conway: $(obj)
-	$(CC) -o $(EXEC) $(obj) $(CC_SDL) $(FLAGS)
+	$(CC) $(FLAGS) -o $(EXEC) $(obj) $(CC_SDL)
 
 .PHONY: clean
 clean:

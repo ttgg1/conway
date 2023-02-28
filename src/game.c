@@ -73,7 +73,7 @@ int init_Libs(struct Game* g){
   return EXIT_SUCCESS;
 }
 
-// TODO: rewrite
+// TODO: rework
 void draw(struct Game *g) {
   /* Draw game
   SDL_SetRenderDrawColor(g->renderer, back_color.r, back_color.g, back_color.b,
@@ -106,42 +106,48 @@ void draw(struct Game *g) {
   }
   SDL_RenderPresent(g->renderer);*/
 
-
     SDL_Surface *surf = SDL_CreateRGBSurface(0,g->dm.w,g->dm.h,32,0,0,0,0);
     // TODO: make ram effient, by using list of cells that are alive
     // TODO: use dynamic list
-    SDL_Rect *alive_cells=malloc(g->arr_size* sizeof(SDL_Rect)); // a bit memory inefficient, but prettier
-    SDL_Rect *dead_cells=malloc(g->arr_size* sizeof(SDL_Rect));
+    GList *alive_cells = NULL; // valid initialisation for GList
+    GList *dead_cells = NULL; // something throws segfault here (i think)
 
     int width_cells = DIV_ROUND_CLOSEST(g->dm.w,g->grid_cell_size); // How many cells fit into one "row"
     int height_cells = DIV_ROUND_CLOSEST(g->dm.h,g->grid_cell_size); // How many cells fit in one "collum"
 
-   // SDL_Rect showRect = {.w = width_cells,.h=height_cells,.x=g->offset_x,.y=g->offset_y};
     SDL_Rect showRect = {.w = g->grid_width*g->grid_cell_size,.h=g->grid_height*g->grid_cell_size,.x=g->offset_x,.y=g->offset_y};
     SDL_Rect srcRect = {.w = g->grid_width,.h=g->grid_height,.x=0,.y=0};
 
-    int num_alive = 0;
-    int num_dead = 0;
+    //int num_alive = 0;
+    //int num_dead = 0;
 
     // Fill Rect array with all drawable positions.
     //TODO: optimize (use one loop)
+    SDL_Rect cords[g->grid_width][g->grid_height];
     for(int y = 0; y < g->grid_height; y++) {
         for(int x = 0; x < g->grid_width; x++) {
+            cords[x][y] = (SDL_Rect){.x=x,.y=y,.w = 1,.h=1};
             if(getCellAt(g,x,y)){
                 // cell alive
-                alive_cells[num_alive] = (SDL_Rect){.w = 1,.h=1,.x=x, .y=y};
-                ++num_alive;
+                //alive_cells[num_alive] = (SDL_Rect){.w = 1,.h=1,.x=x, .y=y};
+                alive_cells = g_list_prepend(alive_cells,&cords[x][y]);
+                //++num_alive;
             } else {
                 // cell dead
-                dead_cells[num_dead] = (SDL_Rect){.w = 1,.h=1,.x=x, .y=y};
-                ++num_dead;
+                //dead_cells[num_dead] = (SDL_Rect){.w = 1,.h=1,.x=x, .y=y};
+                dead_cells = g_list_prepend(dead_cells,&cords[x][y]);
+                //++num_dead;
             }
         }
     }
+
+    alive_cells = g_list_reverse(alive_cells);
+    alive_cells = g_list_reverse(dead_cells);
+
     //draw rects on surface
     SDL_LockSurface(surf);
-    SDL_FillRects(surf,alive_cells,num_alive, SDL_MapRGBA(surf->format,alive_color.r,alive_color.g,alive_color.b,alive_color.a));
-    SDL_FillRects(surf,dead_cells,num_dead, SDL_MapRGBA(surf->format,grid_line_color.r,grid_line_color.g,grid_line_color.b,grid_line_color.a));
+    SDL_FillRects(surf,(SDL_Rect*)g_list_first(alive_cells),g_list_length(alive_cells), SDL_MapRGBA(surf->format,alive_color.r,alive_color.g,alive_color.b,alive_color.a));
+    SDL_FillRects(surf,(SDL_Rect*)g_list_first(dead_cells),g_list_length(dead_cells), SDL_MapRGBA(surf->format,grid_line_color.r,grid_line_color.g,grid_line_color.b,grid_line_color.a));
     SDL_UnlockSurface(surf);
 
     // Create one big texture, that gets transformed when zooming or moving
@@ -156,8 +162,8 @@ void draw(struct Game *g) {
 
     SDL_FreeSurface(surf);
     SDL_DestroyTexture(tex);
-    free(alive_cells);
-    free(dead_cells);
+    g_list_free(alive_cells);
+    g_list_free(dead_cells);
 }
 
 // Struct for thread data
@@ -253,6 +259,7 @@ void tick(struct Game *g) {
 
   // buffer swap
   memcpy(g->cells, g->cells_next, g->arr_size);
+  g->generation++;
   free(data);
 }
 
@@ -385,9 +392,7 @@ void handle_KeyEvents(struct Game *g, SDL_Event *e) {
               draw(g);
               break;
             case SDLK_s:
-              for (int i = 0; i < g->arr_size - 1; i++) { // Fill screen randomly for testing
-                g->cells[i] = rand() & 1;
-              }
+              fillRandom(g);
               break;
               // Moving the plane with the arrow keys
             case SDLK_RIGHT:
@@ -429,5 +434,32 @@ void handle_WindowEvents(struct Game *g, SDL_Event *e) {
     if((*e).window.event == SDL_WINDOWEVENT_RESIZED || (*e).window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
           SDL_GetCurrentDisplayMode(0,&g->dm); // get new window size
           draw(g); // redraw the screen after window resize
+    }
+}
+
+void drawToText(struct Game *g,char* filename) {
+    FILE *f = fopen(filename, "a");
+
+    int lines = 1;
+
+    if (f == NULL) {
+        printf("Error opening file!\n");
+        exit(0);
+    }
+
+    for (int i = 0; i < g->arr_size; i++) {
+        if (i == g->grid_width * lines) {
+            fprintf(f, "\n");
+            ++lines;
+        }
+        fprintf(f, "%c", g->cells[i] ? '#' : '.');
+    }
+    fprintf(f, "\n\n\n");
+    fclose(f);
+}
+
+void fillRandom(struct Game *g) {
+    for (int i = 0; i < g->arr_size - 1; i++) { // Fill screen randomly for testing
+        g->cells[i] = rand() & 1;
     }
 }
