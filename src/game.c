@@ -3,15 +3,14 @@
 // Globals
 
 // define colors
-SDL_Color back_color = (SDL_Color){22, 22, 22, 255};      // Barely Black
-SDL_Color line_color = (SDL_Color){44, 44, 44, 255};      // Dark grey
-SDL_Color alive_color = (SDL_Color){255, 255, 255, 255};  // White
-SDL_Color grid_line_color = (SDL_Color){44, 44, 44, 255}; // Dark grey
+SDL_Color back_color = {.r=22, .g=22, .b=22, .a=255};      // Barely Black
+SDL_Color alive_color = {.r=255, .g=255, .b=255, .a=255};  // White
+SDL_Color grid_line_color = {.r=44, .g=44, .b=44, .a=255}; // Dark grey
 
 struct Game* alloc_Game(void){
   struct Game* g;
 
-  g = malloc(sizeof(*g));
+  g = malloc(sizeof(struct Game));
   if(g == NULL){
     printf("Failed to initialize Game-Array !\n");
     return NULL;
@@ -21,7 +20,7 @@ struct Game* alloc_Game(void){
   return g;
 }
 
-int set_vals(struct Game *g,const int num_cells, const int num_threads){
+void set_Game(struct Game *g,int num_cells,int num_threads){
   //init everything to standard
   g->NUM_THREADS = num_threads;
   g->CELLS_SIZE = num_cells;
@@ -48,10 +47,12 @@ int set_vals(struct Game *g,const int num_cells, const int num_threads){
     g->cells_next[i] = 0;
   }*/
   
-  memset(g->cells,0,g->arr_size);
-  memset(g->cells_next,0,g->arr_size);
-  
-  // init SDL
+  /*memset(g->cells,0,g->arr_size); //Redundant
+  memset(g->cells_next,0,g->arr_size);*/
+}
+
+int init_Libs(struct Game* g){
+    // init SDL
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Initialize SDL: %s",
                 SDL_GetError());
@@ -118,34 +119,34 @@ void *getNeighbours(void *p) {
   struct th_data *d = p;
 
   for (int i = d->f_index; i < d->l_index; i++) {
-    int neigbours = 0;
-    // calculate neigbours
+    int neighbours = 0;
+    // calculate neighbours
     if (d->cells[modulo((i - d->grid_width - 1), d->arr_size)] == 1)
-      neigbours++; // top left
+      neighbours++; // top left
     if (d->cells[modulo((i - d->grid_width + 1), d->arr_size)] == 1)
-      neigbours++; // top right
+      neighbours++; // top right
 
     if (d->cells[modulo((i - d->grid_width), d->arr_size)] == 1)
-      neigbours++; // above
+      neighbours++; // above
     if (d->cells[modulo((i + d->grid_width), d->arr_size)] == 1)
-      neigbours++; // below
+      neighbours++; // below
 
     if (d->cells[modulo((i - 1), d->arr_size)] == 1)
-      neigbours++; // left
+      neighbours++; // left
     if (d->cells[modulo((i + 1), d->arr_size)] == 1)
-      neigbours++; // right
+      neighbours++; // right
 
     if (d->cells[modulo((i + d->grid_width - 1), d->arr_size)] == 1)
-      neigbours++; // bottom left
+      neighbours++; // bottom left
     if (d->cells[modulo((i + d->grid_width + 1), d->arr_size)] == 1)
-      neigbours++; // bottom right
+      neighbours++; // bottom right
  
     // calculate if alive
     if (isAlive_thread(d->cells, i, d->arr_size)) {
-      if (neigbours > 3 || neigbours < 2) {
+      if (neighbours > 3 || neighbours < 2) {
         d->cells_n[i] = 0;
       }
-    } else if (neigbours == 3) {
+    } else if (neighbours == 3) {
       d->cells_n[i] = 1;
     }
   }
@@ -193,14 +194,25 @@ void tick(struct Game *g) {
     pthread_join(th_ids[i], NULL);
   }
 
-  // bufferswap
+  // buffer swap
   memcpy(g->cells, g->cells_next, g->arr_size);
   free(data);
 }
 
-void close(struct Game *g){
-  g->running = false;
+struct Game* g_start(int cells,int num_threads){
+    struct Game *g;
+    g = alloc_Game();
 
+    set_Game(g,cells,num_threads);
+    if(init_Libs(g) == EXIT_FAILURE){
+        printf("Failed to initialize SDL !\n");
+        return NULL;
+    }
+
+    return g;
+}
+
+void g_close(struct Game *g){
   free(g->cells);
   free(g->cells_next);
 
@@ -212,74 +224,31 @@ void close(struct Game *g){
 }
 
 void loop(struct Game *g){
-    while (g->running) {
     SDL_Event e;
+
+    //handle Events
     while (SDL_PollEvent(&e)) {
       switch (e.type) {
       case SDL_KEYDOWN:
-        switch (e.key.keysym.sym) {
-        // Keypresses
-        case SDLK_r:
-          g->simulate = !g->simulate;
+          handle_KeyEvents(g,&e);
           break;
-        case SDLK_SPACE:
-          tick(g);
-          draw(g);
-          break;
-        case SDLK_s:
-          for (int i = 0; i < g->arr_size - 1; i++) {
-            g->cells[i] = rand() & 1;
-          }
-          break;
-        case SDLK_RIGHT:
-          g->offset_x--;
-          break;
-        case SDLK_LEFT:
-          g->offset_x++;
-          break;
-        case SDLK_UP:
-          g->offset_y++;
-          break;
-        case SDLK_DOWN:
-          g->offset_y--;
-          break;
-       
-      }
+
       case SDL_MOUSEBUTTONDOWN:
-        if(e.button.button == SDL_BUTTON_LEFT){
-          int index = modulo(floor(e.motion.x/g->grid_cell_size) + g->offset_x  + ((floor(e.motion.y / g->grid_cell_size) + g->offset_y) * g->grid_width), g->arr_size);
-          flipCell(g, index);
-        } 
+        if(e.button.button == SDL_BUTTON_LEFT){ //Flip a cell if clicked
+          /*int index = modulo(floor(e.motion.x/g->grid_cell_size) + g->offset_x  + ((floor(e.motion.y / g->grid_cell_size) + g->offset_y) * g->grid_width), g->arr_size);
+          flipCell(g, index);*/
+          flipCell(g, getIndex(g,e.motion.x,e.motion.y));
+          draw(g);
+        }
         break;
-        
 
       case SDL_WINDOWEVENT:
-        if(e.window.event == SDL_WINDOWEVENT_RESIZED || e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
-          SDL_GetCurrentDisplayMode(0,&g->dm);
-          draw(g);
-        }
-        break;
+          handle_WindowEvents(g,&e);
+          break;
 
       case SDL_MOUSEWHEEL:
-        if (e.wheel.y > 0){ // scroll up
-          if(g->grid_cell_size >= g->dm.w){
-            g->grid_cell_size = g->dm.w;
-            break;
-          }
-          
-          g->grid_cell_size += 1;
+          handle_MouseEvents(g,&e);
           break;
-        }
-
-        if (e.wheel.y < 0){ // scroll down 
-          g->grid_cell_size -= 1;
-
-          if(g->grid_cell_size <= 0){
-            g->grid_cell_size = 1;
-            break;
-          }
-        }
-        break;
 
       case SDL_QUIT:
         g->running = false;
@@ -287,18 +256,17 @@ void loop(struct Game *g){
         break;
       }
     }
+
+    // Calling neesary game functions
     if (g->simulate) {
       tick(g);
+      draw(g);
     }
-    draw(g);
-  }
 }
 
+
 bool isAlive(struct Game *g, int index) {
-  if (index >= 0 && index < g->arr_size)
-    return g->cells[index];
-  printf("ARGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG\n");
-  return 0;
+    return isAlive_thread(g->cells,index,g->arr_size);
 }
 
 bool isAlive_thread(bool* cells, int index, int arr_size) {
@@ -326,4 +294,62 @@ int modulo(int a, int b){
     return a % b;
   }
   return b + (a % b);
+}
+
+void handle_KeyEvents(struct Game *g, SDL_Event *e) {
+    switch ((*e).key.keysym.sym) {
+            // Keypresses
+            case SDLK_r: // pause/play the simulation
+              g->simulate = !g->simulate;
+              break;
+            case SDLK_SPACE: // advance one tick
+              tick(g);
+              draw(g);
+              break;
+            case SDLK_s:
+              for (int i = 0; i < g->arr_size - 1; i++) { // Fill screen randomly for testing
+                g->cells[i] = rand() & 1;
+              }
+              break;
+              // Moving the plane with the arrow keys
+            case SDLK_RIGHT:
+              g->offset_x--;
+              break;
+            case SDLK_LEFT:
+              g->offset_x++;
+              break;
+            case SDLK_UP:
+              g->offset_y++;
+              break;
+            case SDLK_DOWN:
+              g->offset_y--;
+              break;
+          }
+}
+
+void handle_MouseEvents(struct Game *g, SDL_Event *e) {
+        if ((*e).wheel.y > 0){ // scroll up
+          if(g->grid_cell_size >= g->dm.w){ // if cell-size doesnt fit on screen
+            g->grid_cell_size = g->dm.w;
+            return;
+          }
+          g->grid_cell_size += 1;
+          return;
+        }
+
+        if ((*e).wheel.y < 0){ // scroll down
+          g->grid_cell_size -= 1;
+
+          if(g->grid_cell_size <= 0){ // if cell-size goes negative it will be set to the minimum value
+            g->grid_cell_size = 1;
+            return;
+          }
+        }
+}
+
+void handle_WindowEvents(struct Game *g, SDL_Event *e) {
+    if((*e).window.event == SDL_WINDOWEVENT_RESIZED || (*e).window.event == SDL_WINDOWEVENT_SIZE_CHANGED){
+          SDL_GetCurrentDisplayMode(0,&g->dm); // get new window size
+          draw(g); // redraw the screen after window resize
+    }
 }

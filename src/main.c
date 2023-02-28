@@ -1,23 +1,18 @@
 #include "game.h"
 
 int main(int argc, char *argv[]) {
-  struct Game *g;
-
-  g = alloc_Game();
+  struct Game *g = g_start(1000,10);
 
   if(g == NULL){
-    printf("Game-Array could not be created !\n");
-    return 1;
+      printf("Failed to initialize Game !\n");
+      return 1;
   }
 
-  if(set_vals(g,1000,100) == EXIT_FAILURE){
-    printf("Game Values could not be set !\n");
-    return 1;
+  while(g->running){
+      loop(g);
   }
-  
-  loop(g);
 
-  close(g);
+  g_close(g);
 
   return 0; 
 }
