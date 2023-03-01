@@ -1,6 +1,0 @@
-# ninja log v5
-0	3	0	/home/paul/Projects/conway/cmake-build-release/CMakeFiles/cmake.verify_globs	d2535da1339b14a9
-1	411	1677676297371604975	CMakeFiles/conway.dir/src/main.c.o	ce4850d692196ba7
-0	499	1677676297459604047	CMakeFiles/conway.dir/src/game.c.o	f097641b1d19fc7b
-499	524	1677676297483603794	conway	255a5c1941b09d89
-0	3	0	/home/paul/Projects/conway/cmake-build-release/CMakeFiles/cmake.verify_globs	d2535da1339b14a9
