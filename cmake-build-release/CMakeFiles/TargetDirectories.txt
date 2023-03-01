@@ -1,0 +1,3 @@
+/home/paul/Projects/conway/cmake-build-release/CMakeFiles/conway.dir
+/home/paul/Projects/conway/cmake-build-release/CMakeFiles/edit_cache.dir
+/home/paul/Projects/conway/cmake-build-release/CMakeFiles/rebuild_cache.dir

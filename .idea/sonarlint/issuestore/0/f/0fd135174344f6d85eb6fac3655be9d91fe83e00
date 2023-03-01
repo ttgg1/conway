@@ -1,44 +1,0 @@
-
->c:S11032"&Remove the misleading "//" characters.(‹®©øÿÿÿÿ
-Lc:S1135L"4Complete the task associated to this "TODO" comment.(¬ºûâşÿÿÿÿ
-8c:S1103R"&Remove the misleading "//" characters.(åÚ§%
-8c:S1103U"&Remove the misleading "//" characters.(ç×†b
->c:S1103V"&Remove the misleading "//" characters.(¤òø¡ûÿÿÿÿ
-9c:S1103]"&Remove the misleading "//" characters.(¥Ú³…
-9c:S1103`"&Remove the misleading "//" characters.(ÉÑ€÷
-9c:S1103f"&Remove the misleading "//" characters.(ÉÑ€÷
-Gc:S1135o"4Complete the task associated to this "TODO" comment.(ææñ†
-Gc:S1135p"4Complete the task associated to this "TODO" comment.(‹¶ßº
-‚c:S819q"jcall to undeclared function 'g_array_new'; ISO C99 and later do not support implicit function declarations(ĞîÎ38ÛıÇÈé0
-Fc:S1135"4Complete the task associated to this "TODO" comment.(êÜØ
-Œc:S819‡"rcall to undeclared function 'g_array_append_vals'; ISO C99 and later do not support implicit function declarations(‹íÎ8«ÌĞÈé0
-‘c:S819Œ"rcall to undeclared function 'g_array_append_vals'; ISO C99 and later do not support implicit function declarations(‹ÕØìüÿÿÿÿ8ªÕÈé0
-Mc:S1135"4Complete the task associated to this "TODO" comment.(²£åæÿÿÿÿÿ
-…c:S819£"kcall to undeclared function 'g_array_free'; ISO C99 and later do not support implicit function declarations(òù¿8òÀÁÈé0
-6c:S1481t"unused variable 'width_cells'(ç×†b8»úÖÈé0
-=c:S1481u"unused variable 'height_cells'(¤òø¡ûÿÿÿÿ8»úÖÈé0
-Hc:S1135á"4Complete the task associated to this "TODO" comment.(›‘ŸÃ
-bc:S5276°"Oimplicit conversion turns floating-point number into integer: 'double' to 'int'(¬î£F
-]c:S5271³"Dfunction 'getNeighbours' could be declared with attribute 'noreturn'(Ì¦ªüûÿÿÿÿ
-Gc:S3562©".Add a "default" case to this switch statement.(‚£È€ûÿÿÿÿ
-4c:S1905¾"Remove this redundant cast.(¢Äû¤ùÿÿÿÿ
-4c:S1905¿"Remove this redundant cast.(ä¬ß ÿÿÿÿÿ
-rc:S995í"_Make the type of this parameter a pointer-to-const. The current type of "g" is "struct Game *".(Œ —é
-vc:S995ü"cMake the type of this parameter a pointer-to-const. The current type of "e" is "union SDL_Event *".(ƒÈºš
-Bc:S3562ş".Add a "default" case to this switch statement.(íñç
-{c:S995œ"cMake the type of this parameter a pointer-to-const. The current type of "e" is "union SDL_Event *".(ÚÙæÚÿÿÿÿÿ
-{c:S995°"cMake the type of this parameter a pointer-to-const. The current type of "e" is "union SDL_Event *".(›ª”şÿÿÿÿ
-Wc:S1854t"EValue stored to 'width_cells' during its initialization is never read(ç×†b
-^c:S1854u"FValue stored to 'height_cells' during its initialization is never read(¤òø¡ûÿÿÿÿ
-[c:S3519Ó"GOut of bound memory access (access exceeds upper limit of memory block)(á²´
-=c:S3584"*Potential leak of memory pointed to by 'g'(­Îá4
-0c:S125-"Remove the commented out code.(Ó×˜
-5c:S1252"Remove the commented out code.(‹®©øÿÿÿÿ
-5c:S125N"Remove the commented out code.(Ë˜ˆÛşÿÿÿÿ
-0c:S125w"Remove the commented out code.(äÑ²‡
-7c:S125{"Remove the commented out code.(·¡–¤8“ß¼Èé0
-1c:S125…"Remove the commented out code.(Á½áş
-=c:S125ˆ"Remove the commented out code.(ÓÙ¤âúÿÿÿÿ8“ß¼Èé0
-=c:S125Š"Remove the commented out code.(ÅÕÓûşÿÿÿÿ8” ªÈé0
-8c:S125"Remove the commented out code.(ÀÄğÚ8”ß¼Èé0
-1c:S125²"Remove the commented out code.(»Ü±­

@@ -5,10 +5,10 @@
 #ifndef CONWAY_UTILS_H
 #define CONWAY_UTILS_H
 
-typedef struct ivec2{
+typedef struct ivec2 {
     int x;
     int y;
-}ivec2_t;
+} ivec2_t;
 
 
 #endif //CONWAY_UTILS_H

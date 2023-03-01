@@ -1,0 +1,1 @@
+/usr/bin/gcc -g CMakeFiles/conway.dir/src/game.c.o CMakeFiles/conway.dir/src/main.c.o -o conway  /usr/lib64/libSDL2main.a /usr/lib64/libSDL2-2.0.so.0.2600.3 -L/usr/lib64 -lglib-2.0 
