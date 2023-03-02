@@ -1,6 +1,14 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 project(conway)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
+
 find_package(SDL2 REQUIRED)
 find_package(PkgConfig REQUIRED)
 

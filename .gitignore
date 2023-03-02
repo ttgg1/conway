@@ -11,8 +11,15 @@
 /cmake-build-minsizerel/*
 /cmake-build-release/*
 /cmake-build-relwithdebinfo/*
+/.cmake/
+/CMakeFiles/
 
 /.vscode/
 /.vscode/*
 /.idea/
 /.idea/*
+/Testing/
+/cmake_install.cmake
+/conway.cbp
+/conway
+/conway_old

@@ -58,6 +58,7 @@ int init_Libs(struct Game *g) {
         return EXIT_FAILURE;
     }
     SDL_SetRenderDrawColor(g->renderer, grid_line_color.r, grid_line_color.g, grid_line_color.b, grid_line_color.a);
+    SDL_SetRenderDrawBlendMode(g->renderer, SDL_BLENDMODE_BLEND);
 
     return EXIT_SUCCESS;
 }
@@ -66,6 +67,8 @@ int init_Libs(struct Game *g) {
 void draw(struct Game *g) {
     SDL_Surface *surf = SDL_CreateRGBSurface(0, g->dm.w, g->dm.h, 32, 0, 0, 0, 0);
 
+    SDL_SetColorKey(surf, SDL_TRUE,SDL_MapRGB(surf->format, 0, 0, 0));
+
     SDL_Rect showRect = {.w = g->grid_width * g->grid_cell_size, .h=g->grid_height *
                                                                     g->grid_cell_size, .x=g->offset_x, .y=g->offset_y};
     SDL_Rect srcRect = {.w = g->grid_width, .h=g->grid_height, .x=0, .y=0};
@@ -73,27 +76,26 @@ void draw(struct Game *g) {
     SDL_LockSurface(surf);
 
     // Fill Rect array with all drawable positions.
-    //TODO: optimize (use one loop)
     SDL_Rect cords = {0,0,1,1};
+
     for (int y = 0; y < g->grid_height; y++) {
         for (int x = 0; x < g->grid_width; x++) {
-            cords.x = x;
-            cords.y = y;
             if (getCellAt(g, x, y)) {
                 // cell alive
+                cords.x = x;
+                cords.y = y;
                 SDL_FillRect(surf, &cords, SDL_MapRGBA(surf->format, alive_color.r, alive_color.g, alive_color.b, alive_color.a));
-            } else {
-                // cell dead
-                SDL_FillRect(surf, &cords, SDL_MapRGBA(surf->format, grid_line_color.r, grid_line_color.g, grid_line_color.b, grid_line_color.a));
             }
         }
     }
-
     SDL_UnlockSurface(surf);
 
     // Create one big texture, that gets transformed when zooming or moving
     // Everything gets "rendered" this way, but drawing a texture is very very fast because of hardware acceleration
+    // Also this means smooth zooming and moving
     SDL_Texture *tex = SDL_CreateTextureFromSurface(g->renderer, surf);
+
+    SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
 
     SDL_RenderClear(g->renderer);
 
@@ -115,7 +117,7 @@ struct th_data {
     int f_index; // first index
     int l_index; // last index
     int arr_size;
-    int grid_width;
+    long grid_width;
 };
 
 void *getNeighbours(void *p) {
@@ -123,27 +125,58 @@ void *getNeighbours(void *p) {
 
     for (int i = d->f_index; i < d->l_index; i++) {
         int neighbours = 0;
-        // calculate neighbours
-        if (d->cells[modulo((i - d->grid_width - 1), d->arr_size)] == 1)
-            neighbours++; // top left
-        if (d->cells[modulo((i - d->grid_width + 1), d->arr_size)] == 1)
-            neighbours++; // top right
+        asm volatile goto ( // This is needs less than half of the instructions the old algorithm needed.
+                "pushq %%r8\n\t"
+                "pushq %%rax\n\t" //push all registers we are using
+                //"jmp neg\n\t" // jump to neg label
+            "neg:\n\t"
+                "movq %[arr_p], %%r8\n\t" // get pointer to array
 
-        if (d->cells[modulo((i - d->grid_width), d->arr_size)] == 1)
-            neighbours++; // above
-        if (d->cells[modulo((i + d->grid_width), d->arr_size)] == 1)
-            neighbours++; // below
+                "subq $0x1,%%r8\n\t" //left cell
+                "call cop\n\t" // compare
 
-        if (d->cells[modulo((i - 1), d->arr_size)] == 1)
-            neighbours++; // left
-        if (d->cells[modulo((i + 1), d->arr_size)] == 1)
-            neighbours++; // right
+                "addq %[grd_wdt], %%r8\n\t" //below-left cell
+                "call cop\n\t"
 
-        if (d->cells[modulo((i + d->grid_width - 1), d->arr_size)] == 1)
-            neighbours++; // bottom left
-        if (d->cells[modulo((i + d->grid_width + 1), d->arr_size)] == 1)
-            neighbours++; // bottom right
+                "addq $0x1,%%r8\n\t" //below cell
+                "call cop\n\t"
 
+                "addq $0x1,%%r8\n\t" //below-right cell
+                "call cop\n\t"
+
+                "subq %[grd_wdt], %%r8\n\t" //right cell
+                "call cop\n\t"
+
+                "subq %[grd_wdt], %%r8\n\t" //above-right cell
+                "call cop\n\t"
+
+                "subq $0x1,%%r8\n\t" //above cell
+                "call cop\n\t"
+
+                "subq $0x1,%%r8\n\t" //above-left cell
+                "call cop\n\t"
+
+                "popq %%rax\n\t" //pop all registers we are using
+                "popq %%r8\n\t"
+
+                "jmp %l[finish]\n\t"
+
+            "incr:\n\t"
+                "inc %[ngbrs]\n\t" // increment neighbours
+                "ret\n\t"
+
+            "cop:\n\t"
+                "movq (%%r8), %%rax\n\t" // copy bool to register
+                "test %%al, %%al\n\t" // check if 0 here, %al is the lower byte of %eax, we only need to check this one.
+                "jnz incr\n\t" // if not 0 (if cell alive increase neighbours), jump to incr
+                "ret\n\t" // else return
+
+                : [ngbrs] "+r" (neighbours) // output
+                : [arr_p] "r" (&d->cells[i]), //cells array pointer  input
+                  [grd_wdt] "ir" (d->grid_width)//(GRD_WDT) // grid width
+                : "cc", "memory", "r8","rax" // clobber
+                : finish);
+        finish:
         // calculate if alive
         if (isAlive_thread(d->cells, i, d->arr_size)) {
             if (neighbours > 3 || neighbours < 2) {
