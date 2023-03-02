@@ -58,6 +58,7 @@ int init_Libs(struct Game *g) {
         return EXIT_FAILURE;
     }
     SDL_SetRenderDrawColor(g->renderer, grid_line_color.r, grid_line_color.g, grid_line_color.b, grid_line_color.a);
+    SDL_SetRenderDrawBlendMode(g->renderer, SDL_BLENDMODE_BLEND);
 
     return EXIT_SUCCESS;
 }
@@ -66,6 +67,8 @@ int init_Libs(struct Game *g) {
 void draw(struct Game *g) {
     SDL_Surface *surf = SDL_CreateRGBSurface(0, g->dm.w, g->dm.h, 32, 0, 0, 0, 0);
 
+    SDL_SetColorKey(surf, SDL_TRUE,SDL_MapRGB(surf->format, 0, 0, 0));
+
     SDL_Rect showRect = {.w = g->grid_width * g->grid_cell_size, .h=g->grid_height *
                                                                     g->grid_cell_size, .x=g->offset_x, .y=g->offset_y};
     SDL_Rect srcRect = {.w = g->grid_width, .h=g->grid_height, .x=0, .y=0};
@@ -73,27 +76,26 @@ void draw(struct Game *g) {
     SDL_LockSurface(surf);
 
     // Fill Rect array with all drawable positions.
-    //TODO: optimize (use one loop)
     SDL_Rect cords = {0,0,1,1};
+
     for (int y = 0; y < g->grid_height; y++) {
         for (int x = 0; x < g->grid_width; x++) {
-            cords.x = x;
-            cords.y = y;
             if (getCellAt(g, x, y)) {
                 // cell alive
+                cords.x = x;
+                cords.y = y;
                 SDL_FillRect(surf, &cords, SDL_MapRGBA(surf->format, alive_color.r, alive_color.g, alive_color.b, alive_color.a));
-            } else {
-                // cell dead
-                SDL_FillRect(surf, &cords, SDL_MapRGBA(surf->format, grid_line_color.r, grid_line_color.g, grid_line_color.b, grid_line_color.a));
             }
         }
     }
-
     SDL_UnlockSurface(surf);
 
     // Create one big texture, that gets transformed when zooming or moving
     // Everything gets "rendered" this way, but drawing a texture is very very fast because of hardware acceleration
+    // Also this means smooth zooming and moving
     SDL_Texture *tex = SDL_CreateTextureFromSurface(g->renderer, surf);
+
+    SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
 
     SDL_RenderClear(g->renderer);
 

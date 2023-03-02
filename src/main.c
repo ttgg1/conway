@@ -30,24 +30,32 @@ int main(int argc, char *argv[]) {
         gens = atoi(argv[4]);
         printf("Generations: %i\n", gens);
     }
+    struct Game *g;
 
-    struct Game *g = g_start(cells, threads);
-
-    if (g == NULL) {
-        printf("Failed to initialize Game !\n");
-        return 1;
-    }
     // Tests
-    if (random_fill)
-        fillRandom(g);
+
     if (gens > 0) {
+        g = alloc_Game();
+        set_Game(g, cells, threads);
+
+        if(random_fill)
+            fillRandom(g);
+
         for (int i = 0; i < gens; i++) {
             tick(g);
         }
         drawToText(g, "output.txt");
         return 0;
-    }
+    } else {
+        g = g_start(cells, threads);
 
+        if (g == NULL) {
+            printf("Failed to initialize Game !\n");
+            return 1;
+        }
+    }
+    if (random_fill)
+        fillRandom(g);
     while (g->running) {
         loop(g);
     }
