@@ -16,3 +16,6 @@
 /.vscode/*
 /.idea/
 /.idea/*
+/Testing/
+/cmake_install.cmake
+/conway.cbp

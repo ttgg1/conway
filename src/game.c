@@ -115,7 +115,7 @@ struct th_data {
     int f_index; // first index
     int l_index; // last index
     int arr_size;
-    int grid_width;
+    long grid_width;
 };
 
 void *getNeighbours(void *p) {
@@ -123,27 +123,58 @@ void *getNeighbours(void *p) {
 
     for (int i = d->f_index; i < d->l_index; i++) {
         int neighbours = 0;
-        // calculate neighbours
-        if (d->cells[modulo((i - d->grid_width - 1), d->arr_size)] == 1)
-            neighbours++; // top left
-        if (d->cells[modulo((i - d->grid_width + 1), d->arr_size)] == 1)
-            neighbours++; // top right
+        asm volatile goto ( // This is needs less than half of the instructions the old algorithm needed.
+                "pushq %%r8\n\t"
+                "pushq %%rax\n\t" //push all registers we are using
+                //"jmp neg\n\t" // jump to neg label
+            "neg:\n\t"
+                "movq %[arr_p], %%r8\n\t" // get pointer to array
 
-        if (d->cells[modulo((i - d->grid_width), d->arr_size)] == 1)
-            neighbours++; // above
-        if (d->cells[modulo((i + d->grid_width), d->arr_size)] == 1)
-            neighbours++; // below
+                "subq $0x1,%%r8\n\t" //left cell
+                "call cop\n\t" // compare
 
-        if (d->cells[modulo((i - 1), d->arr_size)] == 1)
-            neighbours++; // left
-        if (d->cells[modulo((i + 1), d->arr_size)] == 1)
-            neighbours++; // right
+                "addq %[grd_wdt], %%r8\n\t" //below-left cell
+                "call cop\n\t"
 
-        if (d->cells[modulo((i + d->grid_width - 1), d->arr_size)] == 1)
-            neighbours++; // bottom left
-        if (d->cells[modulo((i + d->grid_width + 1), d->arr_size)] == 1)
-            neighbours++; // bottom right
+                "addq $0x1,%%r8\n\t" //below cell
+                "call cop\n\t"
 
+                "addq $0x1,%%r8\n\t" //below-right cell
+                "call cop\n\t"
+
+                "subq %[grd_wdt], %%r8\n\t" //right cell
+                "call cop\n\t"
+
+                "subq %[grd_wdt], %%r8\n\t" //above-right cell
+                "call cop\n\t"
+
+                "subq $0x1,%%r8\n\t" //above cell
+                "call cop\n\t"
+
+                "subq $0x1,%%r8\n\t" //above-left cell
+                "call cop\n\t"
+
+                "popq %%rax\n\t" //pop all registers we are using
+                "popq %%r8\n\t"
+
+                "jmp %l[finish]\n\t"
+
+            "incr:\n\t"
+                "inc %[ngbrs]\n\t" // increment neighbours
+                "ret\n\t"
+
+            "cop:\n\t"
+                "movq (%%r8), %%rax\n\t" // copy bool to register
+                "test %%al, %%al\n\t" // check if 0 here, %al is the lower byte of %eax, we only need to check this one.
+                "jnz incr\n\t" // if not 0 (if cell alive increase neighbours), jump to incr
+                "ret\n\t" // else return
+
+                : [ngbrs] "+r" (neighbours) // output
+                : [arr_p] "r" (&d->cells[i]), //cells array pointer  input
+                  [grd_wdt] "ir" (d->grid_width)//(GRD_WDT) // grid width
+                : "cc", "memory", "r8","rax" // clobber
+                : finish);
+        finish:
         // calculate if alive
         if (isAlive_thread(d->cells, i, d->arr_size)) {
             if (neighbours > 3 || neighbours < 2) {
