@@ -63,7 +63,20 @@ int init_Libs(struct Game *g) {
     return EXIT_SUCCESS;
 }
 
-// TODO: rework
+Uint32 map_2D_rainbow(SDL_PixelFormat *p_form,int grid_size,int x,int y){
+    int counts = DIV_ROUND_CLOSEST(grid_size,255);
+    int r = (x/counts)%255;
+    int g = (y/counts)%255;
+    int b = (-y/counts)%255;
+    return SDL_MapRGBA(p_form,r ,g ,b ,255);
+}
+
+void surf_set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
+{
+      Uint8 *target_pixel = (Uint8 *)surface->pixels + y * surface->pitch + x * 4;
+      *(Uint32 *)target_pixel = pixel;
+}
+
 void draw(struct Game *g) {
     SDL_Surface *surf = SDL_CreateRGBSurface(0, g->dm.w, g->dm.h, 32, 0, 0, 0, 0);
 
@@ -84,7 +97,8 @@ void draw(struct Game *g) {
                 // cell alive
                 cords.x = x;
                 cords.y = y;
-                SDL_FillRect(surf, &cords, SDL_MapRGBA(surf->format, alive_color.r, alive_color.g, alive_color.b, alive_color.a));
+                //surf_set_pixel(surf,x,y,SDL_MapRGBA(surf->format, alive_color.r, alive_color.g, alive_color.b, alive_color.a));
+                surf_set_pixel(surf,x,y, map_2D_rainbow(surf->format,g->CELLS_SIZE,x,y));
             }
         }
     }
@@ -188,7 +202,7 @@ void *getNeighbours(void *p) {
     }
     pthread_exit(0);
 }
-
+//TODO: Add some sort of simple haslife algorithm
 void tick(struct Game *g) {
     memcpy(g->cells_next, g->cells, g->arr_size);
     // copy cells to buffer array, so we dont edit the cells array during the calculations
