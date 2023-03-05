@@ -132,16 +132,19 @@ void *getNeighbours(void *p) {
             "neg:\n\t"
                 "movq %[arr_p], %%r8\n\t" // get pointer to array
 
-                "subq $0x1,%%r8\n\t" //left cell
+                //"subq $0x1,%%r8\n\t" //left cell
+                "dec %%r8\n\t" // only works on one-byte arrays
                 "call cop\n\t" // compare
 
                 "addq %[grd_wdt], %%r8\n\t" //below-left cell
                 "call cop\n\t"
 
-                "addq $0x1,%%r8\n\t" //below cell
+                //"addq $0x1,%%r8\n\t" //below cell
+                "inc %%r8\n\t" // only works on one-byte arrays
                 "call cop\n\t"
 
-                "addq $0x1,%%r8\n\t" //below-right cell
+                //"addq $0x1,%%r8\n\t" //below-right cell
+                "inc %%r8\n\t" // only works on one-byte arrays
                 "call cop\n\t"
 
                 "subq %[grd_wdt], %%r8\n\t" //right cell
@@ -150,10 +153,12 @@ void *getNeighbours(void *p) {
                 "subq %[grd_wdt], %%r8\n\t" //above-right cell
                 "call cop\n\t"
 
-                "subq $0x1,%%r8\n\t" //above cell
+                //"subq $0x1,%%r8\n\t" //above cell
+                "dec %%r8\n\t" // only works on one-byte arrays
                 "call cop\n\t"
 
-                "subq $0x1,%%r8\n\t" //above-left cell
+                //"subq $0x1,%%r8\n\t" //above-left cell
+                "dec %%r8\n\t" // only works on one-byte arrays
                 "call cop\n\t"
 
                 "popq %%rax\n\t" //pop all registers we are using
