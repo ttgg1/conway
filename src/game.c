@@ -5,6 +5,10 @@
 // define colors
 SDL_Color alive_color = {.r=255, .g=255, .b=255, .a=255};  // White
 SDL_Color grid_line_color = {.r=44, .g=44, .b=44, .a=255}; // Dark grey
+SDL_Rect showRect = {0,0,0,0};
+
+int mouse_x;
+int mouse_y;
 
 struct Game *alloc_Game(void) {
     struct Game *g;
@@ -82,7 +86,7 @@ void draw(struct Game *g) {
 
     SDL_SetColorKey(surf, SDL_TRUE,SDL_MapRGB(surf->format, 0, 0, 0));
 
-    SDL_Rect showRect = {.w = g->grid_width * g->grid_cell_size, .h=g->grid_height *
+    showRect = (SDL_Rect){.w = g->grid_width * g->grid_cell_size, .h=g->grid_height *
                                                                     g->grid_cell_size, .x=g->offset_x, .y=g->offset_y};
     SDL_Rect srcRect = {.w = g->grid_width, .h=g->grid_height, .x=0, .y=0};
 
@@ -285,7 +289,8 @@ void loop(struct Game *g) {
     static int mouse_at_R_click_x = 0;
     static int mouse_at_R_click_y = 0;
 
-    int scroll_scale = 2;// lower is faster
+
+
     static bool isDragged = false;
     //handle Events
     while (SDL_PollEvent(&e)) {
@@ -312,13 +317,18 @@ void loop(struct Game *g) {
 
             case SDL_MOUSEBUTTONUP:
                 if (e.button.button == SDL_BUTTON_RIGHT) {
-                    g->offset_x += (int) (e.motion.x - mouse_at_R_click_x) / scroll_scale;
-                    g->offset_y += (int) (e.motion.y - mouse_at_R_click_y) / scroll_scale;
-
                     mouse_at_R_click_x = mouse_at_R_click_y = 0;
                     isDragged = false;
                 }
                 break;
+
+            case SDL_MOUSEMOTION:
+                if(isDragged) {
+                    g->offset_x += e.motion.xrel;
+                    g->offset_y += e.motion.yrel;
+
+                    SDL_GetMouseState(&mouse_x,&mouse_y);
+                }
 
             case SDL_WINDOWEVENT:
                 handle_WindowEvents(g, &e);
@@ -375,7 +385,7 @@ int modulo(int a, int b) {
 }
 
 void handle_KeyEvents(struct Game *g, SDL_Event *e) {
-    int step = 5;
+    int step = 10;
     switch ((*e).key.keysym.sym) {
         // Keypresses
         case SDLK_r: // pause/play the simulation
@@ -400,6 +410,17 @@ void handle_KeyEvents(struct Game *g, SDL_Event *e) {
             break;
         case SDLK_DOWN:
             g->offset_y -= step;
+            break;
+        case SDLK_t:
+            g->offset_x = 0;
+            g->offset_y = 0;
+            g->grid_cell_size = 1;
+            break;
+        case SDLK_PAGEUP:
+            ++g->grid_cell_size;
+            break;
+        case SDLK_PAGEDOWN:
+            --g->grid_cell_size;
             break;
     }
 }
