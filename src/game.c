@@ -25,7 +25,7 @@ struct Game *alloc_Game(void) {
   return g;
 }
 
-void g_set_Game(struct Game *g, int num_cells) {
+void g_set_Game(struct Game *g, int num_cells, bool useHashlife) {
   // init everything to standard
   g->CELLS_SIZE = num_cells;
 
@@ -37,6 +37,7 @@ void g_set_Game(struct Game *g, int num_cells) {
 
   g->simulate = false;
   g->running = true;
+  g->hashlife = useHashlife;
 }
 
 int g_init_Libs(struct Game *g) {
@@ -109,11 +110,11 @@ void g_draw(struct Game *g) {
   SDL_DestroyTexture(tex);
 }
 
-struct Game *g_start(int cells) {
+struct Game *g_start(int cells, bool useHashlife) {
   struct Game *g;
   g = alloc_Game();
 
-  g_set_Game(g, cells);
+  g_set_Game(g, cells, useHashlife);
   if (g_init_Libs(g) == EXIT_FAILURE) {
     printf("Failed to initialize SDL !\n");
     return NULL;
@@ -267,7 +268,12 @@ void g_loop(struct Game *g) {
 
   // Calling neesary game functions
   if (g->simulate) {
-    cgl_tick(data);
+    if (g->hashlife) {
+      // TODO: implement
+      // hl_tick();
+    } else {
+      cgl_tick(data);
+    }
   }
   g_draw(g);
 }
@@ -301,10 +307,11 @@ void g_fillRandom() {
 }
 
 cgl_data_t *g_getData() { return data; }
-void g_sim_gens_to_txt(int cells_size, int gens, char *file, bool fillRandom) {
+void g_sim_gens_to_txt(int cells_size, int gens, char *file, bool fillRandom,
+                       bool useHashlife) {
   struct Game *g;
   g = alloc_Game();
-  g_set_Game(g, cells_size);
+  g_set_Game(g, cells_size, useHashlife);
 
   if (fillRandom)
     g_fillRandom();

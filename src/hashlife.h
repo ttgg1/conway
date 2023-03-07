@@ -21,12 +21,11 @@ typedef struct {
   int height;
   int num_chunks;
   Chunk_t *chunks;
-
-  SDL_Window *window;
-  SDL_Renderer *renderer;
 } hl_globals_t;
 
 Uint32 hl_hash(Chunk_t *ch);
+
+void hl_tick(hl_globals_t *hl);
 
 void hl_fill_random(hl_globals_t *gl);
 

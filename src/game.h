@@ -33,19 +33,16 @@ struct Game {
   // Game Variables
   bool simulate;
   bool running;
+  bool hashlife;
 
   // legacy
   int grid_height;
 };
 
 // Init
-void g_set_Game(struct Game *g, int num_cells);
-
-int g_init_Libs(struct Game *g);
-
 struct Game *alloc_Game(void);
 
-struct Game *g_start(int cells);
+struct Game *g_start(int cells, bool useHashlife);
 
 void g_close(struct Game *g);
 
@@ -60,7 +57,8 @@ void g_draw(struct Game *g);
 void g_drawToText(struct Game *g, char *filename);
 
 // Simulate a set number of generations and output to text  file
-void g_sim_gens_to_txt(int cells_size, int gens, char *file, bool fillRandom);
+void g_sim_gens_to_txt(int cells_size, int gens, char *file, bool fillRandom,
+                       bool useHashlife);
 
 cgl_data_t *g_getData();
 
