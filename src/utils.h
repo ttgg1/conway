@@ -3,7 +3,7 @@
 //
 #ifndef CONWAY_UTILS_H
 #define CONWAY_UTILS_H
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 // Divide and round to closest
 #define DIV_ROUND_CLOSEST(n, d)                                                \

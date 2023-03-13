@@ -50,8 +50,7 @@ int g_init_Libs(struct Game *g) {
   g->window = SDL_CreateWindow("Conways Game of Life", SDL_WINDOWPOS_CENTERED,
                                SDL_WINDOWPOS_CENTERED, 1000, 1000,
                                SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-  g->renderer = SDL_CreateRenderer(
-      g->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  g->renderer = SDL_CreateRenderer(g->window, -1, SDL_RENDERER_ACCELERATED);
   if (g->window == NULL) {
     printf("SDL Window could not be created ! \n");
     return EXIT_FAILURE;
@@ -66,7 +65,7 @@ int g_init_Libs(struct Game *g) {
 
   return EXIT_SUCCESS;
 }
-
+static float counter = 0;
 void g_draw(struct Game *g) {
   SDL_Surface *surf = SDL_CreateRGBSurface(0, g->dm.w, g->dm.h, 32, 0, 0, 0, 0);
 
@@ -86,12 +85,22 @@ void g_draw(struct Game *g) {
         // surf_set_pixel(surf,x,y,SDL_MapRGBA(surf->format, alive_color.r,
         // alive_color.g, alive_color.b, alive_color.a));
         surf_set_pixel(surf, x, y,
-                       map_2D_rainbow(surf->format, g->CELLS_SIZE, x, y));
+                       map_2D_rainbow(surf->format, g->CELLS_SIZE,
+                                      y * x * sin(counter),
+                                      y * x * cos(counter)));
+
+        /*surf_set_pixel(surf, x, y,
+                       SDL_MapRGBA(surf->format, 255 * rand(), 255 * rand(),
+                                   255 * rand(), 255));*/
       }
     }
   }
   SDL_UnlockSurface(surf);
 
+  counter += 0.01f;
+  if (counter > 2 * 3.1415965f) {
+    counter = 0.0f;
+  }
   // Create one big texture, that gets transformed when zooming or moving
   // Everything gets "rendered" this way, but drawing a texture is very very
   // fast because of hardware acceleration Also this means smooth zooming and
@@ -104,6 +113,9 @@ void g_draw(struct Game *g) {
 
   SDL_RenderCopy(g->renderer, tex, &srcRect, &showRect);
 
+  /*SDL_SetRenderDrawColor(g->renderer, counter * rand(), counter * rand(),
+                         counter * rand(), 255);
+*/
   SDL_RenderPresent(g->renderer);
 
   SDL_FreeSurface(surf);

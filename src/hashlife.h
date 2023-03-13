@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 #define CHUNK_SIZE 5 //-> 25 bit needed
 #define WIN_W 1000

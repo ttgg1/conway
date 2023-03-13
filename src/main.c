@@ -9,7 +9,7 @@
  */
 
 int main(int argc, char *argv[]) {
-  int cells = 1000;
+  int cells = 1020;
   int gens = 0;
   bool random_fill = false;
   bool hashlife = false;

@@ -7,9 +7,9 @@ void surf_set_pixel(SDL_Surface *surface, int x, int y, Uint32 pixel) {
 
 Uint32 map_2D_rainbow(SDL_PixelFormat *p_form, int grid_size, int x, int y) {
   int counts = DIV_ROUND_CLOSEST(grid_size, 255);
-  int r = (x / counts) % 255;
-  int g = (y / counts) % 255;
-  int b = (-y / counts) % 255;
+  Uint8 r = (x / counts) % 255;
+  Uint8 g = (y / counts) % 255;
+  Uint8 b = (-y / counts) % 255;
   return SDL_MapRGBA(p_form, r, g, b, 255);
 }
 
