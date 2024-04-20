@@ -7,91 +7,62 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <glib.h>
+// #include <glib.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_video.h>
 
+#include "cgl.h"
 #include "utils.h"
 
-// Divide and round to closest
-#define DIV_ROUND_CLOSEST(n, d)                                                \
-  ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d) / 2) / (d)) : (((n) + (d) / 2) / (d)))
-// TODO: can use cell rect instead of only square
 // Struct containing game Variables
 struct Game {
-    // Cells Arrays
-    int CELLS_SIZE;
-    int NUM_THREADS;
-    bool *cells;
-    bool *cells_next;
-    int arr_size;
-    int generation;
+  // Cells Arrays
+  int CELLS_SIZE;
 
-    // Grid init
-    int grid_cell_size;
-    int offset_x;
-    int offset_y;
+  // Grid init
+  int grid_cell_size;
+  int offset_x;
+  int offset_y;
 
-    // SDL Variables
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    SDL_DisplayMode dm;
+  // SDL Variables
+  SDL_Window *window;
+  SDL_Renderer *renderer;
+  SDL_DisplayMode dm;
 
-    // Game Variables
-    bool simulate;
-    bool running;
+  // Game Variables
+  bool simulate;
+  bool running;
+  bool hashlife;
 
-    //legacy
-    int grid_width;
-    int grid_height;
+  // legacy
+  int grid_height;
 };
 
 // Init
-void set_Game(struct Game *g, int num_cells, int num_threads);
-
-int init_Libs(struct Game *g);
-
 struct Game *alloc_Game(void);
 
-struct Game *g_start(int cells, int num_threads);
+struct Game *g_start(int cells, bool useHashlife);
 
 void g_close(struct Game *g);
 
-void fillRandom(struct Game *g);
+void g_fillRandom();
 
-// Game Logic
-void *getNeighbours(void *p); // executed using threads
-void tick(struct Game *g);
-
-//execute this function while Game.running is true
-void loop(struct Game *g);
-
-void handle_KeyEvents(struct Game *g, SDL_Event *e);
-
-void handle_MouseEvents(struct Game *g, SDL_Event *e);
-
-void handle_WindowEvents(struct Game *g, SDL_Event *e);
+// execute this function while Game.running is true
+void g_loop(struct Game *g);
 
 // Output
-void draw(struct Game *g);
+void g_draw(struct Game *g);
 
-void drawToText(struct Game *g, char *filename);
+void g_drawToText(struct Game *g, char *filename);
 
-// Helper Functions
-bool isAlive(struct Game *g, int index);
+// Simulate a set number of generations and output to text  file
+void g_sim_gens_to_txt(int cells_size, int gens, char *file, bool fillRandom,
+                       bool useHashlife);
 
-bool isAlive_thread(bool *cells, int index, int arr_size); //overload for internal use
-void flipCell(struct Game *g, int index);
-
-int getIndex(struct Game *g, int x, int y);
-
-bool getCellAt(struct Game *g, int x, int y);
-
-int modulo(int a, int b);
+cgl_data_t *g_getData();
 
 // define colors
-extern SDL_Color back_color;
 extern SDL_Color alive_color;
 extern SDL_Color grid_line_color;
 
